@@ -705,57 +705,215 @@ function ContactForm() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+
     setStatus('sending');
     setMessage('');
+
     const form = event.currentTarget;
-    const formData = new FormData(form);
-    formData.append('_subject', 'New project enquiry for Hassan Nawaz');
-    formData.append('_template', 'table');
-    formData.append('_captcha', 'false');
+    const payload = Object.fromEntries(new FormData(form).entries());
 
     try {
-      const response = await fetch(`https://formsubmit.co/ajax/${profile.email}`, {
+      const response = await fetch('/api/contact', {
         method: 'POST',
-        headers: { Accept: 'application/json' },
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
       });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || result.success === false) throw new Error('Delivery failed');
+
+      const result = await response.json().catch(() => ({
+        message: 'The server returned an invalid response.',
+        emailDelivered: false,
+        whatsappDelivered: false,
+      }));
+
+      if (!response.ok) {
+        throw new Error(
+          result.message ||
+            'The enquiry could not be delivered. Please try again.',
+        );
+      }
+
       form.reset();
       setStatus('success');
-      setMessage('Your project enquiry has been received. Hassan Nawaz will review it and contact you using your selected reply method.');
+      setMessage(
+        result.message ||
+          'Your project enquiry was delivered successfully.',
+      );
     } catch (error) {
+      console.error('Contact form submission failed:', error);
+
       setStatus('error');
-      setMessage('The enquiry could not be delivered automatically. Please use the email icon to contact Hassan directly.');
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : 'The enquiry could not be delivered automatically. Please contact Hassan directly.',
+      );
     }
   }
 
   return (
     <form className="contact-form" onSubmit={handleSubmit}>
       <div className="form-grid">
-        <label className="form-field"><span>Full name *</span><input name="name" required placeholder="Your full name" /></label>
-        <label className="form-field"><span>Email address *</span><input name="email" type="email" required placeholder="you@example.com" /></label>
-        <label className="form-field"><span>Phone / WhatsApp</span><input name="phone" type="tel" placeholder="Country code and number" /></label>
-        <label className="form-field"><span>Company</span><input name="company" placeholder="Company or organisation" /></label>
-        <label className="form-field"><span>Project type *</span><select name="project_type" required defaultValue=""><option value="" disabled>Select a service</option>{services.map((service) => <option key={service.title} value={service.title}>{service.title}</option>)}</select></label>
-        <label className="form-field"><span>Indicative budget</span><select name="budget" defaultValue=""><option value="" disabled>Select a range</option><option>Under AED 1,500</option><option>AED 1,500–5,000</option><option>AED 5,000–15,000</option><option>AED 15,000+</option><option>To be discussed</option></select></label>
-        <label className="form-field full"><span>Required timeline</span><input name="timeline" placeholder="Example: first issue required within 10 days" /></label>
-        <label className="form-field full"><span>Project brief *</span><textarea name="message" required rows="6" placeholder="Describe the site, dimensions, deliverables, reference files and expected output." /></label>
+        <label className="form-field">
+          <span>Full name *</span>
+          <input
+            name="name"
+            required
+            maxLength="120"
+            autoComplete="name"
+            placeholder="Your full name"
+          />
+        </label>
+
+        <label className="form-field">
+          <span>Email address *</span>
+          <input
+            name="email"
+            type="email"
+            required
+            maxLength="180"
+            autoComplete="email"
+            placeholder="you@example.com"
+          />
+        </label>
+
+        <label className="form-field">
+          <span>Phone / WhatsApp</span>
+          <input
+            name="phone"
+            type="tel"
+            maxLength="80"
+            autoComplete="tel"
+            placeholder="Country code and number"
+          />
+        </label>
+
+        <label className="form-field">
+          <span>Company</span>
+          <input
+            name="company"
+            maxLength="160"
+            autoComplete="organization"
+            placeholder="Company or organisation"
+          />
+        </label>
+
+        <label className="form-field">
+          <span>Project type *</span>
+          <select name="project_type" required defaultValue="">
+            <option value="" disabled>
+              Select a service
+            </option>
+            {services.map((service) => (
+              <option key={service.title} value={service.title}>
+                {service.title}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="form-field">
+          <span>Indicative budget</span>
+          <select name="budget" defaultValue="">
+            <option value="" disabled>
+              Select a range
+            </option>
+            <option>Under AED 1,500</option>
+            <option>AED 1,500–5,000</option>
+            <option>AED 5,000–15,000</option>
+            <option>AED 15,000+</option>
+            <option>To be discussed</option>
+          </select>
+        </label>
+
+        <label className="form-field full">
+          <span>Required timeline</span>
+          <input
+            name="timeline"
+            maxLength="180"
+            placeholder="Example: first issue required within 10 days"
+          />
+        </label>
+
+        <label className="form-field full">
+          <span>Project brief *</span>
+          <textarea
+            name="message"
+            required
+            maxLength="3000"
+            rows="6"
+            placeholder="Describe the site, dimensions, deliverables, reference files and expected output."
+          />
+        </label>
       </div>
 
       <fieldset className="preference-field">
         <legend>Preferred reply method</legend>
-        <label><input type="radio" name="preferred_reply" value="WhatsApp" defaultChecked /> WhatsApp</label>
-        <label><input type="radio" name="preferred_reply" value="Email" /> Email</label>
+        <label>
+          <input
+            type="radio"
+            name="preferred_reply"
+            value="WhatsApp"
+            defaultChecked
+          />{' '}
+          WhatsApp
+        </label>
+        <label>
+          <input
+            type="radio"
+            name="preferred_reply"
+            value="Email"
+          />{' '}
+          Email
+        </label>
       </fieldset>
 
-      <input type="text" name="_honey" className="honeypot" tabIndex="-1" autoComplete="off" />
-      <button className="button primary submit-button" type="submit" disabled={status === 'sending'}>{status === 'sending' ? 'Sending enquiry…' : 'Send project enquiry'} <FaArrowRight /></button>
+      <input
+        type="text"
+        name="_honey"
+        className="honeypot"
+        tabIndex="-1"
+        autoComplete="off"
+        aria-hidden="true"
+      />
+
+      <button
+        className="button primary submit-button"
+        type="submit"
+        disabled={status === 'sending'}
+      >
+        {status === 'sending'
+          ? 'Sending enquiry…'
+          : 'Send project enquiry'}{' '}
+        <FaArrowRight />
+      </button>
 
       {status !== 'idle' && status !== 'sending' && (
-        <div className={`form-notification ${status}`} role="status">
+        <div
+          className={`form-notification ${status}`}
+          role="status"
+          aria-live="polite"
+        >
           {status === 'success' && <FaCheckCircle />}
-          <div><strong>{status === 'success' ? 'Enquiry submitted successfully.' : 'Delivery problem.'}</strong><p>{message}</p>{status === 'error' && <a href={emailComposeUrl} target="_blank" rel="noreferrer">Open email</a>}</div>
+          <div>
+            <strong>
+              {status === 'success'
+                ? 'Enquiry submitted successfully.'
+                : 'Delivery problem.'}
+            </strong>
+            <p>{message}</p>
+            {status === 'error' && (
+              <a
+                href={emailComposeUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open email
+              </a>
+            )}
+          </div>
         </div>
       )}
     </form>
