@@ -1,10 +1,8 @@
-@'
-{
-  "framework": "vite",
-  "functions": {
-    "api/contact.js": {
-      "maxDuration": 10
-    }
-  }
+﻿{
+    "framework":  "vite",
+    "functions":  {
+                      "api/contact.js":  {
+                                             "maxDuration":  10
+                                         }
+                  }
 }
-'@ | Set-Content ".\vercel.json" -Encoding UTF8
