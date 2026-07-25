@@ -45,19 +45,19 @@ The deployable files are created in `dist/`.
 
 ## Contact-form activation
 
-The form uses the FormSubmit AJAX endpoint and sends enquiries to:
+The form uses a normal browser POST to FormSubmit and sends enquiries to:
 
 ```text
 maharhassan151@gmail.com
 ```
 
-On the first real submission, FormSubmit sends an activation email to that address. Hassan must open that email and activate the form once. After activation, later submissions are delivered by email without redirecting the visitor away from the website.
+On the first real submission, FormSubmit sends an activation email to that address. Hassan must open that email and activate the form once. After activation, later submissions are delivered by email. The form uses FormSubmit's official AJAX endpoint and only displays success after the service confirms that it accepted the submission.
 
-No database is used.
+No custom backend, database, serverless API, Resend service, or WhatsApp API is used.
 
-### WhatsApp limitation
+### Reply-channel behavior
 
-The selected reply method is included in the email enquiry. A browser-only website cannot silently send a WhatsApp message from a visitor’s account. Fully automatic WhatsApp notifications require the official WhatsApp Cloud API and a secure server/serverless function. The contact preference option therefore does not open WhatsApp or navigate the visitor away.
+Every form submission is delivered to the owner at `maharhassan151@gmail.com`. The selected WhatsApp or Email option is included in the enquiry as the customer’s preferred reply channel. WhatsApp remains a website selection only: it does not open WhatsApp or use a WhatsApp API. The customer sees a channel-specific success message and the owner responds through the selected channel.
 
 ## External video footage
 
