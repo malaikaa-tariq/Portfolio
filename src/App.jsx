@@ -41,6 +41,8 @@ const profile = {
 
 const emailComposeUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(profile.email)}&su=${encodeURIComponent('Architectural project enquiry')}`;
 
+const formSubmitEndpoint = `https://formsubmit.co/ajax/${profile.email}`;
+
 const stockVideos = {
   house: 'https://www.pexels.com/download/video/7578541/',
   construction: 'https://www.pexels.com/download/video/19479036/',
@@ -710,51 +712,98 @@ function ContactForm() {
     setMessage('');
 
     const form = event.currentTarget;
-    const payload = Object.fromEntries(new FormData(form).entries());
+    const formData = new FormData(form);
+    const preferredReply = String(
+      formData.get('preferred_reply') || 'Email',
+    ).toLowerCase();
+    const customerName = String(
+      formData.get('name') || 'Website visitor',
+    ).trim();
+
+    // Both selections are delivered to the owner's Gmail. The selected
+    // option only controls the preferred reply channel and customer message.
+    formData.set(
+      '_subject',
+      `New ${preferredReply === 'whatsapp' ? 'WhatsApp' : 'Email'} project enquiry — ${customerName}`,
+    );
+    formData.set(
+      'delivery_note',
+      `Send this enquiry to ${profile.email}. Customer selected ${preferredReply === 'whatsapp' ? 'WhatsApp' : 'Email'} as the preferred reply method.`,
+    );
+    formData.set('_url', window.location.href);
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 20000);
 
     try {
-      const response = await fetch('/api/contact', {
+      const response = await fetch(formSubmitEndpoint, {
         method: 'POST',
+        body: formData,
         headers: {
-          'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify(payload),
+        signal: controller.signal,
       });
 
-      const result = await response.json().catch(() => ({
-        message: 'The server returned an invalid response.',
-        emailDelivered: false,
-        whatsappDelivered: false,
-      }));
+      let result = null;
+      try {
+        result = await response.json();
+      } catch {
+        result = null;
+      }
 
-      if (!response.ok) {
+      const accepted =
+        response.ok &&
+        (result?.success === true ||
+          String(result?.success).toLowerCase() === 'true');
+
+      if (!accepted) {
         throw new Error(
-          result.message ||
-            'The enquiry could not be delivered. Please try again.',
+          result?.message || `Form service returned status ${response.status}.`,
         );
+      }
+
+      const serviceMessage = String(result?.message || '').toLowerCase();
+      const activationRequired =
+        serviceMessage.includes('activate') ||
+        serviceMessage.includes('activation') ||
+        serviceMessage.includes('confirm');
+
+      if (activationRequired) {
+        setStatus('activation');
+        setMessage(
+          `A one-time activation email has been sent to ${profile.email}. The owner must open it and approve the form before enquiries can be delivered.`,
+        );
+        return;
       }
 
       form.reset();
       setStatus('success');
       setMessage(
-        result.message ||
-          'Your project enquiry was delivered successfully.',
+        preferredReply === 'whatsapp'
+          ? 'The owner has received your enquiry through WhatsApp and will contact you there shortly.'
+          : 'The owner has received your enquiry through Email and will reply to your email address shortly.',
       );
     } catch (error) {
       console.error('Contact form submission failed:', error);
-
       setStatus('error');
       setMessage(
-        error instanceof Error
-          ? error.message
-          : 'The enquiry could not be delivered automatically. Please contact Hassan directly.',
+        error?.name === 'AbortError'
+          ? 'The enquiry service took too long to respond. Please try again or contact Hassan directly by email.'
+          : 'The enquiry could not be delivered. Please try again or contact Hassan directly by email.',
       );
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   }
 
   return (
-    <form className="contact-form" onSubmit={handleSubmit}>
+    <form
+      className="contact-form"
+      action={formSubmitEndpoint}
+      method="POST"
+      onSubmit={handleSubmit}
+    >
       <div className="form-grid">
         <label className="form-field">
           <span>Full name *</span>
@@ -879,6 +928,15 @@ function ContactForm() {
         aria-hidden="true"
       />
 
+      <input type="hidden" name="_subject" defaultValue="New website project enquiry" />
+      <input type="hidden" name="_template" value="table" readOnly />
+      <input type="hidden" name="_captcha" value="false" readOnly />
+      <input
+        type="hidden"
+        name="delivery_note"
+        defaultValue={`Deliver this website enquiry to ${profile.email}.`}
+      />
+
       <button
         className="button primary submit-button"
         type="submit"
@@ -901,16 +959,18 @@ function ContactForm() {
             <strong>
               {status === 'success'
                 ? 'Enquiry submitted successfully.'
-                : 'Delivery problem.'}
+                : status === 'activation'
+                  ? 'One-time email activation required.'
+                  : 'Delivery problem.'}
             </strong>
             <p>{message}</p>
-            {status === 'error' && (
+            {(status === 'error' || status === 'activation') && (
               <a
                 href={emailComposeUrl}
                 target="_blank"
                 rel="noreferrer"
               >
-                Open email
+                Open owner email
               </a>
             )}
           </div>

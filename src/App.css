@@ -649,6 +649,7 @@ p { margin-top: 0; color: var(--muted); }
 .form-notification { margin-top: 24px; padding: 18px; display: flex; gap: 14px; align-items: flex-start; border: 1px solid var(--line); background: var(--surface-soft); }
 .form-notification.success { border-left: 4px solid #4f9b68; }
 .form-notification.error { border-left: 4px solid #b75546; }
+.form-notification.activation { border-left: 4px solid #b88932; }
 .form-notification svg { flex: 0 0 auto; margin-top: 4px; color: #4f9b68; font-size: 1.2rem; }
 .form-notification strong { display: block; margin-bottom: 4px; }
 .form-notification p { margin-bottom: 0; font-size: .88rem; }

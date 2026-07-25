@@ -1,25 +1,25 @@
-# Contact form setup
+# Contact form email setup
 
-The project has no database and no custom backend.
-
-The React form sends enquiries by AJAX to FormSubmit:
+The contact form is connected to the owner's Gmail address:
 
 ```text
-https://formsubmit.co/ajax/maharhassan151@gmail.com
+maharhassan151@gmail.com
 ```
 
-## One-time activation
+Both **WhatsApp** and **Email** selections are sent to that Gmail inbox. The selected option is included in the enquiry so the owner knows whether the customer prefers a WhatsApp or email reply.
 
-1. Run the website.
-2. Submit one real test enquiry.
-3. Open the activation email received at `maharhassan151@gmail.com`.
-4. Confirm/activate the form.
-5. Submit another test enquiry and verify that the email arrives.
+## One-time activation required
 
-The visitor remains on the website and sees one confirmation message.
+The site uses FormSubmit's browser-based AJAX endpoint, so there is no custom backend in this project. FormSubmit requires the owner to approve the destination email once.
 
-## Preferred reply method
+1. Deploy or run the website through a web server (`npm run dev` is fine).
+2. Submit one complete test enquiry.
+3. Open `maharhassan151@gmail.com` and check **Inbox**, **Spam**, and **Promotions**.
+4. Open the FormSubmit activation message and click the confirmation/activation button.
+5. Submit a second test enquiry. It should then arrive in the owner's Gmail.
 
-WhatsApp and Email are selection fields inside the form; they do not navigate the visitor away. The selected option is included in the email so Hassan knows how the client wants to be contacted.
+The website now shows a success message only after FormSubmit returns a successful response. A failed network request no longer displays a false success message.
 
-A static/browser-only site cannot automatically send a WhatsApp message to the owner. For that feature, add a secure serverless function using the official Meta WhatsApp Cloud API. Do not put WhatsApp API tokens directly in React or public JavaScript.
+## Important
+
+An email address alone cannot authorize Gmail or an SMTP account. The one-time activation must be completed by someone who can open the owner's Gmail inbox. No Gmail password or app password should be placed in frontend code.
